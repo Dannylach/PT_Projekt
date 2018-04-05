@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HandPaint2.Properties
+namespace HandPaint.Properties
 {
 
 

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandPaint2", "HandPaint2\HandPaint2.csproj", "{037F2928-2904-4251-ACE6-A37EA2EF04E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HandPaint", "HandPaint\HandPaint.csproj", "{037F2928-2904-4251-ACE6-A37EA2EF04E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

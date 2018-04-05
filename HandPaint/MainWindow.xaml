@@ -1,12 +1,13 @@
-﻿<Window x:Class="HandPaint2.MainWindow"
+﻿<Window x:Class="HandPaint.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:HandPaint2"
+        xmlns:local="clr-namespace:HandPaint"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded">
     <Grid>
-        
+        <Canvas x:Name="Canvas" MouseDown="Canvas_MouseDown" MouseUp="Canvas_MouseUp" MouseMove="Canvas_MouseMove">
+        </Canvas>
     </Grid>
 </Window>
