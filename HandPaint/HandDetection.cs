@@ -18,7 +18,7 @@ namespace HandPaint2
         {
             Image<Bgr, byte> ImageFrame = new Image<Bgr, byte>(Source); 
             Image<Gray, byte> grayFrame = ImageFrame.Convert<Gray, byte>(); 
-            CascadeClassifier haar = new CascadeClassifier("C:\\Projekty\\Studia\\PT\\Projekt\\PT_Projekt\\HandPaint\\hand.xml"); 
+            CascadeClassifier haar = new CascadeClassifier("hand.xml"); 
             var hands = haar.DetectMultiScale(grayFrame, 1.1, 10, Size.Empty); 
             foreach (var hand in hands)
                 ImageFrame.Draw(hand, new Bgr(System.Drawing.Color.Green), 3); 
