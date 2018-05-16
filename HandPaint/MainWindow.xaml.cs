@@ -11,7 +11,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Emgu.CV.CvEnum;
-using HandPaint2;
 using Ellipse = System.Windows.Shapes.Ellipse;
 
 
@@ -127,7 +126,8 @@ namespace HandPaint
 
         public static BitmapSource ToBitmapSource(IImage image)
         {
-            using (var source = HandDetection.DetectHand(image.Bitmap))
+            var handDetection = new HandDetection();
+            using (var source = handDetection.DetectHand(image.Bitmap))
             {
                 var ptr = source.GetHbitmap(); //obtain the Hbitmap
 
