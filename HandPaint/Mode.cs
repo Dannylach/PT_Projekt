@@ -6,6 +6,7 @@
         Line,
         Rectangle,
         Ellipse,
-        Brush
+        Brush,
+        Erase
     }
 }

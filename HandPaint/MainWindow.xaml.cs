@@ -28,7 +28,6 @@ namespace HandPaint
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
-        private Point _position;
 
         private Point _startPoint;
         private Rectangle _myRectangle;
@@ -44,14 +43,9 @@ namespace HandPaint
         private Path _path;
         private PathFigure _pathFigure;
 
-        private Ellipse _brush = new Ellipse()
-        {
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 0,
-            Height = 5,
-            Width = 5,
-            Fill = Brushes.Black
-        };
+        private int _strokeThickness = 5;
+        private Brush _brush = Brushes.LightBlue;
+
 
         public MainWindow()
         {
@@ -109,20 +103,10 @@ namespace HandPaint
             }
         }
 
-        private void BrushTimer_Tick(object sender, EventArgs e)
-        {
-            Point position = Mouse.GetPosition(Canvas);
-            SelectedModeTextBox.Text = "X: " + position.X + " Y: " + position.Y;
-            if (Mouse.LeftButton == MouseButtonState.Released || !_drawing || _position == position)
-                return;
-            _position = position;
-            PutBrush(_brush, _position);
-        }
-
         [DllImport("gdi32")]
         private static extern int DeleteObject(IntPtr o);
 
-        public static BitmapSource ToBitmapSource(IImage image)
+        private static BitmapSource ToBitmapSource(IImage image)
         {
             using (var source = image.Bitmap)
             {
@@ -155,16 +139,16 @@ namespace HandPaint
                         Y1 = e.GetPosition(Canvas).Y,
                         X2 = e.GetPosition(Canvas).X,
                         Y2 = e.GetPosition(Canvas).Y,
-                        Stroke = Brushes.Red,
-                        StrokeThickness = 4
+                        Stroke = _brush,
+                        StrokeThickness = _strokeThickness
                     };
                     Canvas.Children.Add(_myLine);
                     break;
                 case Mode.Rectangle:
                     _myRectangle = new Rectangle
                     {
-                        Stroke = Brushes.LightBlue,
-                        StrokeThickness = 2
+                        Stroke = _brush,
+                        StrokeThickness = _strokeThickness
                     };
                     Canvas.SetLeft(_myRectangle, _startPoint.X);
                     Canvas.SetTop(_myRectangle, _startPoint.Y);
@@ -173,26 +157,26 @@ namespace HandPaint
                 case Mode.Ellipse:
                     _myEllipse = new Ellipse
                     {
-                        Stroke = Brushes.Blue,
-                        StrokeThickness = 3
+                        Stroke = _brush,
+                        StrokeThickness = _strokeThickness
                     };
                     Canvas.SetLeft(_myEllipse, _startPoint.X);
                     Canvas.SetTop(_myEllipse, _startPoint.Y);
                     Canvas.Children.Add(_myEllipse);
                     break;
                 case Mode.Brush:
-                    //_brushTimer.Start();
                     _pathGeometry = new PathGeometry();
                     _pathFigure = new PathFigure();
                     _pathFigure.StartPoint = _startPoint;
-                    _pathFigure.IsClosed = false;
                     _pathGeometry.Figures.Add(_pathFigure);
                     _path = new Path();
-                    _path.Stroke = new SolidColorBrush(Colors.Red);
-                    _path.StrokeThickness = 10;
+                    _path.Stroke = _brush;
+                    _path.StrokeThickness = _strokeThickness;
                     _path.Data = _pathGeometry;
                     Canvas.Children.Add(_path);
 
+                    break;
+                case Mode.Erase:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -212,7 +196,8 @@ namespace HandPaint
 
         private void Canvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            
+            HitTestResult result = VisualTreeHelper.HitTest(Canvas, e.GetPosition(Canvas));
+
             if (e.LeftButton == MouseButtonState.Released || !_drawing)
                 return;
 
@@ -253,6 +238,11 @@ namespace HandPaint
                     ls.Point = pos;
                     _pathFigure.Segments.Add(ls);
                     break;
+                case Mode.Erase:
+                    var id = result.VisualHit.DependencyObjectType.Id;
+                    var cos = result.VisualHit.;
+
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -283,22 +273,10 @@ namespace HandPaint
         {
             ChangeMode(Mode.Line, (UIElement)sender);
         }
-
-        private void PutBrush(Shape brush, Point position)
+        private void ChangeModeErase_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            var clonedEllipse = new Ellipse()
-            {
-                Stroke = brush.Stroke,
-                StrokeThickness = brush.StrokeThickness,
-                Height = brush.Height,
-                Width = brush.Width,
-                Fill = brush.Fill
-            };
-            Canvas.Children.Add(clonedEllipse);
-            Canvas.SetLeft(clonedEllipse, position.X - clonedEllipse.Width / 2.0);
-            Canvas.SetTop(clonedEllipse, position.Y - clonedEllipse.Height / 2.0);
+            ChangeMode(Mode.Erase, (UIElement)sender);
         }
-        
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
