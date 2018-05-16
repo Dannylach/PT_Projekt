@@ -10,10 +10,11 @@
         <Canvas x:Name="Canvas" Margin="0,150,0,0" MouseDown="Canvas_MouseDown" MouseUp="Canvas_MouseUp" MouseMove="Canvas_MouseMove" Width="1120" Height="630" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         <Rectangle Fill="White" HorizontalAlignment="Left" Height="100" Margin="10,10,0,0" Stroke="Black" VerticalAlignment="Top" Width="100"/>
         <ProgressBar x:Name="LoadingProgressBar" HorizontalAlignment="Left" Height="10" Margin="10,10,0,0" VerticalAlignment="Top" Width="100" BorderBrush="{x:Null}" Foreground="Blue" Background="White" Visibility="Hidden"/>
+        <Rectangle x:Name="ChangeModeBrush" Fill="White" HorizontalAlignment="Left" Height="50" Margin="145,10,0,0" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeModeBrush_OnMouseEnter"/>
         <Rectangle x:Name="ChangeModeRectangle" Fill="White" HorizontalAlignment="Left" Height="50" Margin="200,10,0,0" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeModeRectangle_OnMouseEnter"/>
-        <TextBlock x:Name="SelectedModeTextBox" HorizontalAlignment="Right" Margin="0,10,60.6,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Foreground="Red" FontSize="20"/>
         <Rectangle x:Name="ChangeModeEllipse" Fill="White" HorizontalAlignment="Left" Height="50" Margin="255,10,0,0" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeModeEllipse_OnMouseEnter"/>
         <Rectangle x:Name="ChangeModeLine" Fill="White" HorizontalAlignment="Left" Height="50" Margin="310,10,0,0" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeModeLine_OnMouseEnter"/>
+        <TextBlock x:Name="SelectedModeTextBox" HorizontalAlignment="Right" Margin="0,10,60.6,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Foreground="Red" FontSize="20"/>
 
     </Grid>
 </Window>

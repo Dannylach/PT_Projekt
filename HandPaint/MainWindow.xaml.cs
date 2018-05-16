@@ -28,7 +28,6 @@ namespace HandPaint
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
-        private DispatcherTimer _brushTimer;
         private Point _position;
 
         private Point _startPoint;
@@ -40,6 +39,10 @@ namespace HandPaint
         private Mode _tmpMode;
         private UIElement _tmpMouseOverObject = null;
         private int _millisecondsWhenMouseOver = 0;
+
+        private PathGeometry _pathGeometry;
+        private Path _path;
+        private PathFigure _pathFigure;
 
         private Ellipse _brush = new Ellipse()
         {
@@ -69,12 +72,7 @@ namespace HandPaint
             _mouseOverTimer.Tick += new EventHandler(MauseOverTimer_Tick);
             _mouseOverTimer.Interval = new TimeSpan(0, 0, 0, 0, MillisecondsPerTick);
 
-            _brushTimer = new DispatcherTimer();
-            _brushTimer.Tick += new EventHandler(BrushTimer_Tick);
-            _brushTimer.Interval = TimeSpan.FromTicks(1);
-
             SelectedModeTextBox.Text = _mode.ToString();
-            _brushTimer.Start();
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -183,7 +181,18 @@ namespace HandPaint
                     Canvas.Children.Add(_myEllipse);
                     break;
                 case Mode.Brush:
-                    _brushTimer.Start();
+                    //_brushTimer.Start();
+                    _pathGeometry = new PathGeometry();
+                    _pathFigure = new PathFigure();
+                    _pathFigure.StartPoint = _startPoint;
+                    _pathFigure.IsClosed = false;
+                    _pathGeometry.Figures.Add(_pathFigure);
+                    _path = new Path();
+                    _path.Stroke = new SolidColorBrush(Colors.Red);
+                    _path.StrokeThickness = 10;
+                    _path.Data = _pathGeometry;
+                    Canvas.Children.Add(_path);
+
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -198,7 +207,6 @@ namespace HandPaint
                 _myLine = null;
                 _myRectangle = null;
                 _myEllipse = null;
-                _brushTimer.Stop();
             }
         }
 
@@ -241,6 +249,9 @@ namespace HandPaint
                     Canvas.SetTop(_myEllipse, y);
                     break;
                 case Mode.Brush:
+                    LineSegment ls = new LineSegment();
+                    ls.Point = pos;
+                    _pathFigure.Segments.Add(ls);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -255,7 +266,10 @@ namespace HandPaint
             LoadingProgressBar.Visibility = Visibility.Visible;
             _mouseOverTimer.Start();
         }
-
+        private void ChangeModeBrush_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            ChangeMode(Mode.Brush, (UIElement)sender);
+        }
         private void ChangeModeRectangle_OnMouseEnter(object sender, MouseEventArgs e)
         {
             ChangeMode(Mode.Rectangle, (UIElement)sender);
