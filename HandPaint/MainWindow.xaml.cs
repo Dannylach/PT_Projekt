@@ -27,7 +27,7 @@ namespace HandPaint
     {
         private const int MillisecondsToLoad = 500;
         private const int MillisecondsPerTick = 10;
-        private static bool handDetecting = false;
+        private static bool handDetecting = true;
 
         private VideoCapture _capture;
         private DispatcherTimer _timer;
@@ -40,7 +40,7 @@ namespace HandPaint
         private bool _drawing;
         private Mode _mode = Mode.Brush;
         private Mode _tmpMode;
-        private UIElement _tmpMouseOverObject;
+        private Shape _tmpMouseOverObject;
         private int _millisecondsWhenMouseOver;
 
         private PathGeometry _pathGeometry;
@@ -94,11 +94,10 @@ namespace HandPaint
                 }
                 else
                 {
-                    _mode = _tmpMode;
+                    ChangeMode(_tmpMode);
                     _tmpMode = Mode.None;
                     LoadingProgressBar.Value = 0;
                     LoadingProgressBar.Visibility = Visibility.Hidden;
-                    SelectedModeTextBox.Text = _mode.ToString();
                 }
             }
             else
@@ -270,7 +269,7 @@ namespace HandPaint
             }
         }
 
-        private void SrartChangingMode(Mode mode, UIElement sender)
+        private void SrartChangingMode(Mode mode, Shape sender)
         {
             _mouseOverTimer.Stop();
             _tmpMouseOverObject = sender;
@@ -279,27 +278,34 @@ namespace HandPaint
             _mouseOverTimer.Start();
         }
 
+        private void ChangeMode(Mode mode)
+        {
+            _mode = mode;
+            SelectedModeTextBox.Text = _mode.ToString();
+            SelectedModeRectangle.Fill = _tmpMouseOverObject.Fill;
+        }
+
         private void ChangeModeBrush_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Brush, (UIElement) sender);
+            SrartChangingMode(Mode.Brush, (Shape) sender);
             Interface_MouseEnter(sender, e);
         }
 
         private void ChangeModeRectangle_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Rectangle, (UIElement) sender);
+            SrartChangingMode(Mode.Rectangle, (Shape) sender);
             Interface_MouseEnter(sender, e);
         }
 
         private void ChangeModeEllipse_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Ellipse, (UIElement) sender);
+            SrartChangingMode(Mode.Ellipse, (Shape) sender);
             Interface_MouseEnter(sender, e);
         }
 
         private void ChangeModeLine_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Line, (UIElement) sender);
+            SrartChangingMode(Mode.Line, (Shape) sender);
             Interface_MouseEnter(sender, e);
         }
 
