@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -9,7 +10,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Emgu.CV.CvEnum;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
 using Ellipse = System.Windows.Shapes.Ellipse;
+using Point = System.Windows.Point;
+using Rectangle = System.Windows.Shapes.Rectangle;
 
 
 namespace HandPaint
@@ -21,6 +27,7 @@ namespace HandPaint
     {
         private const int MillisecondsToLoad = 500;
         private const int MillisecondsPerTick = 10;
+        private static bool handDetecting = false;
 
         private VideoCapture _capture;
         private DispatcherTimer _timer;
@@ -41,7 +48,7 @@ namespace HandPaint
         private PathFigure _pathFigure;
 
         private int _strokeThickness = 1;
-        private Brush _brush = Brushes.Red;
+        private Brush _selectedBrush = Brushes.Red;
 
 
 
@@ -62,6 +69,7 @@ namespace HandPaint
             _mouseOverTimer = new DispatcherTimer();
             _mouseOverTimer.Tick += MauseOverTimer_Tick;
             _mouseOverTimer.Interval = new TimeSpan(0, 0, 0, 0, MillisecondsPerTick);
+            SelectedColorRectangle.Fill = _selectedBrush;
 
             SelectedModeTextBox.Text = _mode.ToString();
         }
@@ -106,19 +114,39 @@ namespace HandPaint
         public static BitmapSource ToBitmapSource(IImage image)
         {
             var handDetection = new HandDetection();
-            using (var source = handDetection.DetectHand(image.Bitmap))
+            if (handDetecting)
             {
-                var ptr = source.GetHbitmap(); //obtain the Hbitmap
+                using (var source = handDetection.DetectHand(image.Bitmap))
+                {
+                    var ptr = source.GetHbitmap(); //obtain the Hbitmap
 
-                var bs = System.Windows.Interop
-                    .Imaging.CreateBitmapSourceFromHBitmap(
-                        ptr,
-                        IntPtr.Zero,
-                        Int32Rect.Empty,
-                        BitmapSizeOptions.FromEmptyOptions());
+                    var bs = System.Windows.Interop
+                        .Imaging.CreateBitmapSourceFromHBitmap(
+                            ptr,
+                            IntPtr.Zero,
+                            Int32Rect.Empty,
+                            BitmapSizeOptions.FromEmptyOptions());
 
-                DeleteObject(ptr); //release the HBitmap
-                return bs;
+                    DeleteObject(ptr); //release the HBitmap
+                    return bs;
+                }
+            }
+            else
+            {
+                using (var source = image.Bitmap)
+                {
+                    var ptr = source.GetHbitmap(); //obtain the Hbitmap
+
+                    var bs = System.Windows.Interop
+                        .Imaging.CreateBitmapSourceFromHBitmap(
+                            ptr,
+                            IntPtr.Zero,
+                            Int32Rect.Empty,
+                            BitmapSizeOptions.FromEmptyOptions());
+
+                    DeleteObject(ptr); //release the HBitmap
+                    return bs;
+                }
             }
         }
 
@@ -137,7 +165,7 @@ namespace HandPaint
                         Y1 = e.GetPosition(Canvas).Y,
                         X2 = e.GetPosition(Canvas).X,
                         Y2 = e.GetPosition(Canvas).Y,
-                        Stroke = _brush,
+                        Stroke = _selectedBrush,
                         StrokeThickness = _strokeThickness
                     };
                     Canvas.Children.Add(_myLine);
@@ -145,7 +173,7 @@ namespace HandPaint
                 case Mode.Rectangle:
                     _myRectangle = new Rectangle
                     {
-                        Stroke = _brush,
+                        Stroke = _selectedBrush,
                         StrokeThickness = _strokeThickness
                     };
                     Canvas.SetLeft(_myRectangle, _startPoint.X);
@@ -155,7 +183,7 @@ namespace HandPaint
                 case Mode.Ellipse:
                     _myEllipse = new Ellipse
                     {
-                        Stroke = _brush,
+                        Stroke = _selectedBrush,
                         StrokeThickness = _strokeThickness
                     };
                     Canvas.SetLeft(_myEllipse, _startPoint.X);
@@ -170,7 +198,7 @@ namespace HandPaint
                     _pathFigure.IsClosed = false;
                     _pathGeometry.Figures.Add(_pathFigure);
                     _path = new Path();
-                    _path.Stroke = _brush;
+                    _path.Stroke = _selectedBrush;
                     _path.StrokeThickness = _strokeThickness;
                     _path.Data = _pathGeometry;
                     Canvas.Children.Add(_path);
@@ -268,9 +296,25 @@ namespace HandPaint
         {
             ChangeMode(Mode.Line, (UIElement) sender);
         }
-        
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+        }
+
+        private void ColorWheel_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var point = e.GetPosition(ColorWheel);
+            Bitmap bitmap = new Bitmap("kolo-barw.png");
+            var xBitmap = point.X / ColorWheel.Width * bitmap.Width;
+            var yBitmap = point.Y / ColorWheel.Height * bitmap.Height;
+            var color = bitmap.GetPixel((int) xBitmap, (int) yBitmap);
+            ChangeSelectedColor(new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)));
+        }
+
+        private void ChangeSelectedColor(Brush brush)
+        {
+            _selectedBrush = brush;
+            SelectedColorRectangle.Fill = _selectedBrush;
         }
     }
 }

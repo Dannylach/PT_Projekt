@@ -18,7 +18,7 @@ namespace HandPaint
     public class HandDetection
     {
         private Image<Bgr, byte> ImageFrame;
-        private readonly IColor YCrCb_min = new Ycc(120, 131, 80);
+        private readonly IColor YCrCb_min = new Ycc(100, 131, 80);
         private readonly IColor YCrCb_max = new Ycc(200, 185, 135);
         private RotatedRect box;
         private int[,] startIndex;

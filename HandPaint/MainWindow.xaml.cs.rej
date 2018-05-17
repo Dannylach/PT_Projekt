@@ -1,0 +1,12 @@
+diff a/HandPaint/MainWindow.xaml.cs b/HandPaint/MainWindow.xaml.cs	(rejected hunks)
+@@ -40,6 +40,10 @@
+         private UIElement _tmpMouseOverObject = null;
+         private int _millisecondsWhenMouseOver = 0;
+ 
++        private PathGeometry _pathGeometry;
++        private Path _path;
++        private PathFigure _pathFigure;
++
+         private Ellipse _brush = new Ellipse()
+         {
+             Stroke = Brushes.Transparent,
