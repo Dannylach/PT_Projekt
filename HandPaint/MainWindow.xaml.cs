@@ -3,10 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using Emgu.CV.Structure;
 using Emgu.CV;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -19,57 +17,50 @@ namespace HandPaint
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private const int MillisecondsToLoad = 500;
         private const int MillisecondsPerTick = 10;
-        private bool _programmRunning;
 
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
-        private Point _position;
 
         private Point _startPoint;
         private Rectangle _myRectangle;
         private Line _myLine;
         private Ellipse _myEllipse;
-        private bool _drawing = false;
+        private bool _drawing;
         private Mode _mode = Mode.Brush;
         private Mode _tmpMode;
-        private UIElement _tmpMouseOverObject = null;
-        private int _millisecondsWhenMouseOver = 0;
+        private UIElement _tmpMouseOverObject;
+        private int _millisecondsWhenMouseOver;
 
         private PathGeometry _pathGeometry;
         private Path _path;
         private PathFigure _pathFigure;
 
-        private Ellipse _brush = new Ellipse()
-        {
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 0,
-            Height = 5,
-            Width = 5,
-            Fill = Brushes.Black
-        };
+        private int _strokeThickness = 1;
+        private Brush _brush = Brushes.Red;
+
+
 
         public MainWindow()
         {
             InitializeComponent();
             LoadingProgressBar.Maximum = MillisecondsToLoad;
-            _programmRunning = true;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _capture = new VideoCapture();
             _timer = new DispatcherTimer();
-            _timer.Tick += new EventHandler(Timer_Tick);
+            _timer.Tick += Timer_Tick;
             _timer.Interval = new TimeSpan(0, 0, 0, 0, 1);
             _timer.Start();
 
             _mouseOverTimer = new DispatcherTimer();
-            _mouseOverTimer.Tick += new EventHandler(MauseOverTimer_Tick);
+            _mouseOverTimer.Tick += MauseOverTimer_Tick;
             _mouseOverTimer.Interval = new TimeSpan(0, 0, 0, 0, MillisecondsPerTick);
 
             SelectedModeTextBox.Text = _mode.ToString();
@@ -109,16 +100,6 @@ namespace HandPaint
             }
         }
 
-        private void BrushTimer_Tick(object sender, EventArgs e)
-        {
-            Point position = Mouse.GetPosition(Canvas);
-            SelectedModeTextBox.Text = "X: " + position.X + " Y: " + position.Y;
-            if (Mouse.LeftButton == MouseButtonState.Released || !_drawing || _position == position)
-                return;
-            _position = position;
-            PutBrush(_brush, _position);
-        }
-
         [DllImport("gdi32")]
         private static extern int DeleteObject(IntPtr o);
 
@@ -134,14 +115,14 @@ namespace HandPaint
                         ptr,
                         IntPtr.Zero,
                         Int32Rect.Empty,
-                        System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                        BitmapSizeOptions.FromEmptyOptions());
 
                 DeleteObject(ptr); //release the HBitmap
                 return bs;
             }
         }
 
-        private void Canvas_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             _drawing = true;
             _startPoint = e.GetPosition(Canvas);
@@ -156,16 +137,16 @@ namespace HandPaint
                         Y1 = e.GetPosition(Canvas).Y,
                         X2 = e.GetPosition(Canvas).X,
                         Y2 = e.GetPosition(Canvas).Y,
-                        Stroke = Brushes.Red,
-                        StrokeThickness = 4
+                        Stroke = _brush,
+                        StrokeThickness = _strokeThickness
                     };
                     Canvas.Children.Add(_myLine);
                     break;
                 case Mode.Rectangle:
                     _myRectangle = new Rectangle
                     {
-                        Stroke = Brushes.LightBlue,
-                        StrokeThickness = 2
+                        Stroke = _brush,
+                        StrokeThickness = _strokeThickness
                     };
                     Canvas.SetLeft(_myRectangle, _startPoint.X);
                     Canvas.SetTop(_myRectangle, _startPoint.Y);
@@ -174,8 +155,8 @@ namespace HandPaint
                 case Mode.Ellipse:
                     _myEllipse = new Ellipse
                     {
-                        Stroke = Brushes.Blue,
-                        StrokeThickness = 3
+                        Stroke = _brush,
+                        StrokeThickness = _strokeThickness
                     };
                     Canvas.SetLeft(_myEllipse, _startPoint.X);
                     Canvas.SetTop(_myEllipse, _startPoint.Y);
@@ -189,8 +170,8 @@ namespace HandPaint
                     _pathFigure.IsClosed = false;
                     _pathGeometry.Figures.Add(_pathFigure);
                     _path = new Path();
-                    _path.Stroke = new SolidColorBrush(Colors.Red);
-                    _path.StrokeThickness = 10;
+                    _path.Stroke = _brush;
+                    _path.StrokeThickness = _strokeThickness;
                     _path.Data = _pathGeometry;
                     Canvas.Children.Add(_path);
 
@@ -200,7 +181,7 @@ namespace HandPaint
             }
         }
 
-        private void Canvas_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (_drawing)
             {
@@ -211,7 +192,7 @@ namespace HandPaint
             }
         }
 
-        private void Canvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        private void Canvas_MouseMove(object sender, MouseEventArgs e)
         {
 
             if (e.LeftButton == MouseButtonState.Released || !_drawing)
@@ -267,43 +248,29 @@ namespace HandPaint
             LoadingProgressBar.Visibility = Visibility.Visible;
             _mouseOverTimer.Start();
         }
+
         private void ChangeModeBrush_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Brush, (UIElement)sender);
+            ChangeMode(Mode.Brush, (UIElement) sender);
         }
+
         private void ChangeModeRectangle_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Rectangle, (UIElement)sender);
+            ChangeMode(Mode.Rectangle, (UIElement) sender);
         }
 
         private void ChangeModeEllipse_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Ellipse, (UIElement)sender);
+            ChangeMode(Mode.Ellipse, (UIElement) sender);
         }
+
         private void ChangeModeLine_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Line, (UIElement)sender);
+            ChangeMode(Mode.Line, (UIElement) sender);
         }
-
-        private void PutBrush(Shape brush, Point position)
-        {
-            var clonedEllipse = new Ellipse()
-            {
-                Stroke = brush.Stroke,
-                StrokeThickness = brush.StrokeThickness,
-                Height = brush.Height,
-                Width = brush.Width,
-                Fill = brush.Fill
-            };
-            Canvas.Children.Add(clonedEllipse);
-            Canvas.SetLeft(clonedEllipse, position.X - clonedEllipse.Width / 2.0);
-            Canvas.SetTop(clonedEllipse, position.Y - clonedEllipse.Height / 2.0);
-        }
-
-
+        
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            _programmRunning = false;
         }
     }
 }
