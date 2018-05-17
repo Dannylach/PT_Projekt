@@ -47,8 +47,9 @@ namespace HandPaint
         private Path _path;
         private PathFigure _pathFigure;
 
-        private int _strokeThickness = 1;
+        private int _strokeThickness = 5;
         private Brush _selectedBrush = Brushes.Red;
+        private bool _colorSelecting = false;
 
 
 
@@ -217,6 +218,7 @@ namespace HandPaint
                 _myLine = null;
                 _myRectangle = null;
                 _myEllipse = null;
+                _path = null;
             }
         }
 
@@ -268,7 +270,7 @@ namespace HandPaint
             }
         }
 
-        private void ChangeMode(Mode mode, UIElement sender)
+        private void SrartChangingMode(Mode mode, UIElement sender)
         {
             _mouseOverTimer.Stop();
             _tmpMouseOverObject = sender;
@@ -279,22 +281,26 @@ namespace HandPaint
 
         private void ChangeModeBrush_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Brush, (UIElement) sender);
+            SrartChangingMode(Mode.Brush, (UIElement) sender);
+            Interface_MouseEnter(sender, e);
         }
 
         private void ChangeModeRectangle_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Rectangle, (UIElement) sender);
+            SrartChangingMode(Mode.Rectangle, (UIElement) sender);
+            Interface_MouseEnter(sender, e);
         }
 
         private void ChangeModeEllipse_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Ellipse, (UIElement) sender);
+            SrartChangingMode(Mode.Ellipse, (UIElement) sender);
+            Interface_MouseEnter(sender, e);
         }
 
         private void ChangeModeLine_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            ChangeMode(Mode.Line, (UIElement) sender);
+            SrartChangingMode(Mode.Line, (UIElement) sender);
+            Interface_MouseEnter(sender, e);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -303,18 +309,48 @@ namespace HandPaint
 
         private void ColorWheel_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            _colorSelecting = true;
             var point = e.GetPosition(ColorWheel);
-            Bitmap bitmap = new Bitmap("kolo-barw.png");
-            var xBitmap = point.X / ColorWheel.Width * bitmap.Width;
-            var yBitmap = point.Y / ColorWheel.Height * bitmap.Height;
-            var color = bitmap.GetPixel((int) xBitmap, (int) yBitmap);
-            ChangeSelectedColor(new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)));
+            SelectColorFromImage(point, ColorWheel, "kolo-barw.png");
         }
 
         private void ChangeSelectedColor(Brush brush)
         {
             _selectedBrush = brush;
             SelectedColorRectangle.Fill = _selectedBrush;
+        }
+
+        private void SelectColorFromImage(Point point, System.Windows.Controls.Image image, string filename)
+        {
+            Bitmap bitmap = new Bitmap(filename);
+            var xBitmap = point.X / image.Width * bitmap.Width;
+            var yBitmap = point.Y / image.Height * bitmap.Height;
+            var color = bitmap.GetPixel((int)xBitmap, (int)yBitmap);
+            ChangeSelectedColor(new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)));
+        }
+
+        private void ColorWheel_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            _colorSelecting = false;
+        }
+
+        private void ColorWheel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_colorSelecting)
+            {
+                var point = e.GetPosition(ColorWheel);
+                SelectColorFromImage(point, ColorWheel, "kolo-barw.png");
+            }
+        }
+
+        private void Interface_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _drawing = false;
+        }
+
+        private void ColorWheel_MouseLeave(object sender, MouseEventArgs e)
+        {
+            _colorSelecting = false;
         }
     }
 }
