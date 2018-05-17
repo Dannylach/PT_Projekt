@@ -18,6 +18,8 @@ namespace HandPaint
     public class HandDetection
     {
         private Image<Bgr, byte> ImageFrame;
+        private IColor hsv_min = new Hsv(10, 45, 100);
+        private IColor hsv_max = new Hsv(20, 255, 230);
         private readonly IColor YCrCb_min = new Ycc(100, 131, 80);
         private readonly IColor YCrCb_max = new Ycc(200, 185, 135);
         private RotatedRect box;
@@ -33,9 +35,9 @@ namespace HandPaint
         {
             ImageFrame = new Image<Bgr, byte>(source); 
 
-            var skinDetector = new YCrCbSkinDetector();
+            var skinDetector = new HsvSkinDetector();
 
-            var skin = skinDetector.DetectSkin(ImageFrame, YCrCb_min, YCrCb_max);
+            var skin = skinDetector.DetectSkin(ImageFrame, hsv_min, hsv_max);
 
             ExtractContourAndHull(ImageFrame, skin);
 
@@ -49,8 +51,11 @@ namespace HandPaint
             var contours = new VectorOfVectorOfPoint();
             CvInvoke.FindContours(skin, contours, new Mat(), RetrType.List, ChainApproxMethod.ChainApproxSimple);
             var result2 = 0;
-            var biggestContour = contours[0];
-            for(var i=0; i < contours.Size; i++)
+            VectorOfPoint biggestContour = null;
+            if (contours.Size != 0)
+                biggestContour = contours[0];
+
+            for (var i=0; i < contours.Size; i++)
             {
                 var result1 = contours[i].Size;
                 if (result1 <= result2) continue;
@@ -124,10 +129,13 @@ namespace HandPaint
             Matrix<int> m = new Matrix<int>(defects.Rows, defects.Cols, defects.NumberOfChannels); // copy Mat to a matrix...
             defects.CopyTo(m);
             Matrix<int>[] channels = m.Split();
-
-            startIndex = channels.ElementAt(0).Data;
-            endIndex = channels.ElementAt(1).Data;
-            depthIndex = channels.ElementAt(2).Data;
+            if (channels.Length != 0)
+            {
+                startIndex = channels.ElementAt(0).Data;
+                endIndex = channels.ElementAt(1).Data;
+                depthIndex = channels.ElementAt(2).Data;
+            }
+            
         }
         
         private void DrawAndComputeFingersNum()
@@ -145,7 +153,8 @@ namespace HandPaint
             #endregion
 
             #region defects drawing
-            for (int i = 0; i < startIndex.Length; i++)
+            if (startIndex == null) return;
+            for (var i = 0; i < startIndex.Length; i++)
             {
                 PointF startPoint = new PointF(currentContour[startIndex[i, 0]].X, currentContour[startIndex[i, 0]].Y);
 
