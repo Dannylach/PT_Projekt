@@ -10,12 +10,14 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Emgu.CV.CvEnum;
+using Microsoft.Win32;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using Ellipse = System.Windows.Shapes.Ellipse;
 using Point = System.Windows.Point;
 using Rectangle = System.Windows.Shapes.Rectangle;
+using Size = System.Windows.Size;
 
 
 namespace HandPaint
@@ -28,7 +30,6 @@ namespace HandPaint
         private const int MillisecondsToLoad = 500;
         private const int MillisecondsPerTick = 10;
         private static bool handDetecting = true;
-
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
@@ -357,6 +358,40 @@ namespace HandPaint
         private void ColorWheel_MouseLeave(object sender, MouseEventArgs e)
         {
             _colorSelecting = false;
+        }
+
+        public void SaveCanvas(int dpi, string filename)
+        {
+            Size size = new Size(this.Width, this.Height);
+            Canvas.Measure(size);
+            //canvas.Arrange(new Rect(size));
+
+            var rtb = new RenderTargetBitmap(
+                (int)this.Width, //width 
+                (int)this.Height, //height 
+                dpi, //dpi x 
+                dpi, //dpi y 
+                PixelFormats.Pbgra32 // pixelformat 
+            );
+            rtb.Render(Canvas);
+
+            SaveRTBAsPNG(rtb, filename);
+        }
+
+        private void SaveRTBAsPNG(RenderTargetBitmap bmp, string filename)
+        {
+            var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
+
+            using (var stm = System.IO.File.Create(filename))
+            {
+                enc.Save(stm);
+            }
+        }
+
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+            SaveCanvas(96, "saved.png");
         }
     }
 }
