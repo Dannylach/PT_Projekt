@@ -124,7 +124,8 @@ namespace HandPaint
 
         public static BitmapSource ToBitmapSource(IImage image)
         {
-            using (var source = image.Bitmap)
+            var handDetection = new HandDetection();
+            using (var source = handDetection.DetectHand(image.Bitmap))
             {
                 var ptr = source.GetHbitmap(); //obtain the Hbitmap
 
@@ -212,7 +213,7 @@ namespace HandPaint
 
         private void Canvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            
+
             if (e.LeftButton == MouseButtonState.Released || !_drawing)
                 return;
 
@@ -233,7 +234,7 @@ namespace HandPaint
                     _myLine.Y2 = e.GetPosition(Canvas).Y;
                     break;
                 case Mode.Rectangle:
-                    
+
                     _myRectangle.Width = w;
                     _myRectangle.Height = h;
 
@@ -298,7 +299,7 @@ namespace HandPaint
             Canvas.SetLeft(clonedEllipse, position.X - clonedEllipse.Width / 2.0);
             Canvas.SetTop(clonedEllipse, position.Y - clonedEllipse.Height / 2.0);
         }
-        
+
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
