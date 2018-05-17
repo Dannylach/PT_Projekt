@@ -389,9 +389,9 @@ namespace HandPaint
             }
         }
 
-        private void button_Click(object sender, RoutedEventArgs e)
+        private void Save_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SaveCanvas(96, "saved.png");
+            throw new NotImplementedException();
         }
     }
 }
