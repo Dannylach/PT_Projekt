@@ -10,7 +10,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Emgu.CV.CvEnum;
-using Microsoft.Win32;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
@@ -27,12 +26,16 @@ namespace HandPaint
     /// </summary>
     public partial class MainWindow
     {
-        private const int MillisecondsToLoad = 500;
+        private delegate void Action();
+
+        private const int MillisecondsToLoad = 200;
         private const int MillisecondsPerTick = 10;
         private static bool handDetecting = true;
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
+        private Action _action;
+        private bool _isMouseOverAction;
 
         private Point _startPoint;
         private Rectangle _myRectangle;
@@ -50,8 +53,11 @@ namespace HandPaint
 
         private int _strokeThickness = 5;
         private Brush _selectedBrush = Brushes.Red;
-        private bool _colorSelecting = false;
+        private bool _colorSelecting;
 
+        private int _dpiSavedImage = 96;
+        private string _filenameSavedImage = "image.jpeg";
+        private const double ColorWheelScale = 3;
 
 
         public MainWindow()
@@ -86,7 +92,7 @@ namespace HandPaint
 
         private void MauseOverTimer_Tick(object sender, EventArgs e)
         {
-            if (_tmpMouseOverObject.IsMouseOver && _tmpMode != Mode.None)
+            if (_tmpMouseOverObject.IsMouseOver && _isMouseOverAction)
             {
                 if (_millisecondsWhenMouseOver < MillisecondsToLoad)
                 {
@@ -95,10 +101,10 @@ namespace HandPaint
                 }
                 else
                 {
-                    ChangeMode(_tmpMode);
-                    _tmpMode = Mode.None;
+                    _action();
                     LoadingProgressBar.Value = 0;
                     LoadingProgressBar.Visibility = Visibility.Hidden;
+                    _isMouseOverAction = false;
                 }
             }
             else
@@ -106,6 +112,7 @@ namespace HandPaint
                 _millisecondsWhenMouseOver = 0;
                 LoadingProgressBar.Value = 0;
                 LoadingProgressBar.Visibility = Visibility.Hidden;
+                _isMouseOverAction = false;
             }
         }
 
@@ -270,44 +277,43 @@ namespace HandPaint
             }
         }
 
-        private void SrartChangingMode(Mode mode, Shape sender)
+        private void StartChangingMode(Mode mode, Shape sender)
         {
-            _mouseOverTimer.Stop();
-            _tmpMouseOverObject = sender;
             _tmpMode = mode;
-            LoadingProgressBar.Visibility = Visibility.Visible;
-            _mouseOverTimer.Start();
+            StartMauseOverAction(ChangeMode, sender);
         }
 
-        private void ChangeMode(Mode mode)
+        private void ChangeMode()
         {
-            _mode = mode;
+            _mode = _tmpMode;
+
             SelectedModeTextBox.Text = _mode.ToString();
             SelectedModeRectangle.Fill = _tmpMouseOverObject.Fill;
+            _tmpMode = Mode.None;
         }
 
         private void ChangeModeBrush_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Brush, (Shape) sender);
-            Interface_MouseEnter(sender, e);
+            StartChangingMode(Mode.Brush, (Shape) sender);
+            Interface_MouseEnter();
         }
 
         private void ChangeModeRectangle_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Rectangle, (Shape) sender);
-            Interface_MouseEnter(sender, e);
+            StartChangingMode(Mode.Rectangle, (Shape) sender);
+            Interface_MouseEnter();
         }
 
         private void ChangeModeEllipse_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Ellipse, (Shape) sender);
-            Interface_MouseEnter(sender, e);
+            StartChangingMode(Mode.Ellipse, (Shape) sender);
+            Interface_MouseEnter();
         }
 
         private void ChangeModeLine_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            SrartChangingMode(Mode.Line, (Shape) sender);
-            Interface_MouseEnter(sender, e);
+            StartChangingMode(Mode.Line, (Shape) sender);
+            Interface_MouseEnter();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -330,8 +336,8 @@ namespace HandPaint
         private void SelectColorFromImage(Point point, System.Windows.Controls.Image image, string filename)
         {
             Bitmap bitmap = new Bitmap(filename);
-            var xBitmap = point.X / image.Width * bitmap.Width;
-            var yBitmap = point.Y / image.Height * bitmap.Height;
+            var xBitmap = point.X / image.ActualWidth * bitmap.Width;
+            var yBitmap = point.Y / image.ActualHeight * bitmap.Height;
             var color = bitmap.GetPixel((int)xBitmap, (int)yBitmap);
             ChangeSelectedColor(new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)));
         }
@@ -350,38 +356,33 @@ namespace HandPaint
             }
         }
 
-        private void Interface_MouseEnter(object sender, MouseEventArgs e)
+        private void Interface_MouseEnter()
         {
             _drawing = false;
         }
-
-        private void ColorWheel_MouseLeave(object sender, MouseEventArgs e)
+        
+        private void SaveCanvas()
         {
-            _colorSelecting = false;
-        }
-
-        public void SaveCanvas(int dpi, string filename)
-        {
-            Size size = new Size(this.Width, this.Height);
+            Size size = new Size(Width, Height);
             Canvas.Measure(size);
             //canvas.Arrange(new Rect(size));
 
             var rtb = new RenderTargetBitmap(
-                (int)this.Width, //width 
-                (int)this.Height, //height 
-                dpi, //dpi x 
-                dpi, //dpi y 
+                (int)Width, //width 
+                (int)Height, //height 
+                _dpiSavedImage, //dpi x 
+                _dpiSavedImage, //dpi y 
                 PixelFormats.Pbgra32 // pixelformat 
             );
             rtb.Render(Canvas);
 
-            SaveRTBAsPNG(rtb, filename);
+            SaveRtbAsJpeg(rtb, _filenameSavedImage);
         }
 
-        private void SaveRTBAsPNG(RenderTargetBitmap bmp, string filename)
+        private void SaveRtbAsJpeg(RenderTargetBitmap bmp, string filename)
         {
-            var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
-            enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
+            var enc = new JpegBitmapEncoder();
+            enc.Frames.Add(BitmapFrame.Create(bmp));
 
             using (var stm = System.IO.File.Create(filename))
             {
@@ -391,7 +392,41 @@ namespace HandPaint
 
         private void Save_OnMouseEnter(object sender, MouseEventArgs e)
         {
-            throw new NotImplementedException();
+            StartMauseOverAction(SaveCanvas, sender);
+        }
+
+        private void ColorWheel_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            Interface_MouseEnter();
+            ColorWheelGrid.Height *= ColorWheelScale;
+            ColorWheelGrid.Width *= ColorWheelScale;
+        }
+
+        private void ColorWheel_MouseLeave(object sender, MouseEventArgs e)
+        {
+            _colorSelecting = false;
+            ColorWheelGrid.Height /= ColorWheelScale;
+            ColorWheelGrid.Width /= ColorWheelScale;
+        }
+
+        private void ClearAll_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            StartMauseOverAction(ClearCanvas, sender);
+        }
+
+        private void StartMauseOverAction(Action action, object sender)
+        {
+            _tmpMouseOverObject = (Shape)sender;
+            _mouseOverTimer.Stop();
+            _action = action;
+            _isMouseOverAction = true;
+            LoadingProgressBar.Visibility = Visibility.Visible;
+            _mouseOverTimer.Start();
+        }
+
+        private void ClearCanvas()
+        {
+            Canvas.Children.Clear();
         }
     }
 }
