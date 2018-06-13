@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Emgu.CV.CvEnum;
+using Emgu.CV.Structure;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
@@ -122,39 +123,25 @@ namespace HandPaint
         public static BitmapSource ToBitmapSource(IImage image)
         {
             var handDetection = new HandDetection();
-            if (handDetecting)
+            //TODO Podłączyć pod myszkę
+            PointF pointer = handDetection.DetectHand(image.Bitmap);
+            var tempCircleF = new CircleF(pointer, 10);
+            var imageFrame = new Image<Bgr, byte>(image.Bitmap);
+            imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
+            using (var source = imageFrame.Bitmap)
             {
-                using (var source = handDetection.DetectHand(image.Bitmap))
-                {
-                    var ptr = source.GetHbitmap(); //obtain the Hbitmap
 
-                    var bs = System.Windows.Interop
-                        .Imaging.CreateBitmapSourceFromHBitmap(
-                            ptr,
-                            IntPtr.Zero,
-                            Int32Rect.Empty,
-                            BitmapSizeOptions.FromEmptyOptions());
+                var ptr = source.GetHbitmap(); //obtain the Hbitmap
 
-                    DeleteObject(ptr); //release the HBitmap
-                    return bs;
-                }
-            }
-            else
-            {
-                using (var source = image.Bitmap)
-                {
-                    var ptr = source.GetHbitmap(); //obtain the Hbitmap
+                var bs = System.Windows.Interop
+                    .Imaging.CreateBitmapSourceFromHBitmap(
+                        ptr,
+                        IntPtr.Zero,
+                        Int32Rect.Empty,
+                        BitmapSizeOptions.FromEmptyOptions());
 
-                    var bs = System.Windows.Interop
-                        .Imaging.CreateBitmapSourceFromHBitmap(
-                            ptr,
-                            IntPtr.Zero,
-                            Int32Rect.Empty,
-                            BitmapSizeOptions.FromEmptyOptions());
-
-                    DeleteObject(ptr); //release the HBitmap
-                    return bs;
-                }
+                DeleteObject(ptr); //release the HBitmap
+                return bs;
             }
         }
 
