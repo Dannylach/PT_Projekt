@@ -128,6 +128,7 @@ namespace HandPaint
             PointF pointer = handDetection.DetectHand(image.Bitmap);
             System.Drawing.Point point = System.Drawing.Point.Round(pointer);
             System.Windows.Forms.Cursor.Position = point;
+            Console.WriteLine(handDetection.GetFingerNumb());
             var tempCircleF = new CircleF(pointer, 10);
             var imageFrame = new Image<Bgr, byte>(image.Bitmap);
             imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));

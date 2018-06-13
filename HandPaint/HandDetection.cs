@@ -193,5 +193,10 @@ namespace HandPaint
         {
             return fingerNumb < 3;
         }
+
+        public int GetFingerNumb()
+        {
+            return fingerNumb;
+        }
     }
 }
