@@ -121,13 +121,12 @@ namespace HandPaint
         [DllImport("gdi32")]
         private static extern int DeleteObject(IntPtr o);
 
-        public static BitmapSource ToBitmapSource(IImage image)
+        public BitmapSource ToBitmapSource(IImage image)
         {
             var handDetection = new HandDetection();
             //TODO Podłączyć pod myszkę
             PointF pointer = handDetection.DetectHand(image.Bitmap);
-            System.Drawing.Point point = System.Drawing.Point.Round(pointer);
-            System.Windows.Forms.Cursor.Position = point;
+            SetMousePosition(image, pointer);
             Console.WriteLine(handDetection.GetFingerNumb());
             var tempCircleF = new CircleF(pointer, 10);
             var imageFrame = new Image<Bgr, byte>(image.Bitmap);
@@ -418,6 +417,15 @@ namespace HandPaint
         private void ClearCanvas()
         {
             Canvas.Children.Clear();
+        }
+
+        private void SetMousePosition(IImage image, PointF pointRelativeToImage)
+        {
+            var imageHeight = image.Bitmap.Height;
+            var imageWidth = image.Bitmap.Width;
+            var xMultiplier = 1920 / imageWidth; //TODO zmienić wartości nie na sztywno
+            var yMultiplier = 1080 / imageHeight;
+            System.Windows.Forms.Cursor.Position = new System.Drawing.Point(Convert.ToInt32(pointRelativeToImage.X * xMultiplier), Convert.ToInt32(pointRelativeToImage.Y * yMultiplier));
         }
     }
 }

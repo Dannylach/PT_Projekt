@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HandPaint"
         mc:Ignorable="d"
-        Title="MainWindow" Height="1000" Width="1300" Loaded="Window_Loaded" WindowState="Maximized" Closing="Window_Closing">
+        Title="MainWindow" Height="1000" Width="1300" Loaded="Window_Loaded" WindowState="Maximized" Closing="Window_Closing" ResizeMode="NoResize">
     <Grid Background="Black">
         <Canvas x:Name="Canvas" Margin="0,0,0,0" MouseDown="Canvas_MouseDown" MouseUp="Canvas_MouseUp" MouseMove="Canvas_MouseMove" Height="840" VerticalAlignment="Top" Background="White" >
 
