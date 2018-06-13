@@ -89,6 +89,7 @@ namespace HandPaint
             var mirrorFrame = new Mat();
             CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
             Canvas.Background = new ImageBrush(ToBitmapSource(mirrorFrame));
+
         }
 
         private void MauseOverTimer_Tick(object sender, EventArgs e)
@@ -125,6 +126,8 @@ namespace HandPaint
             var handDetection = new HandDetection();
             //TODO Podłączyć pod myszkę
             PointF pointer = handDetection.DetectHand(image.Bitmap);
+            System.Drawing.Point point = System.Drawing.Point.Round(pointer);
+            System.Windows.Forms.Cursor.Position = point;
             var tempCircleF = new CircleF(pointer, 10);
             var imageFrame = new Image<Bgr, byte>(image.Bitmap);
             imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
