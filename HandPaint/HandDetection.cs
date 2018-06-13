@@ -28,6 +28,7 @@ namespace HandPaint
         private int[,] depthIndex;
         private Mat defects;
         private VectorOfPoint currentContour;
+        private int fingerNumb;
         
 
         public PointF DetectHand(Bitmap source)
@@ -182,10 +183,15 @@ namespace HandPaint
 
             var tempCircleF = new CircleF(tempPointF, 10);
             ImageFrame.Draw(tempCircleF, new Bgr(Color.MediumVioletRed));
-
+            fingerNumb = fingerNum;
             #endregion
 
             return tempPointF;
+        }
+
+        public bool IsDrawing()
+        {
+            return fingerNumb < 3;
         }
     }
 }
