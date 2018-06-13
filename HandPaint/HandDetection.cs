@@ -161,7 +161,6 @@ namespace HandPaint
                                Math.Pow(startCircle.Center.Y - depthCircle.Center.Y, 2)) > box.Size.Height / 6.5))
                 {
                     fingerNum++;
-                    //ImageFrame.Draw(startDepthLine, new Bgr(Color.Green), 2);
                     var lenghtLine = startCircle.Center.X > depthCircle.Center.X
                         ? Math.Pow((startCircle.Center.X - depthCircle.Center.X), 2)
                         : Math.Pow((depthCircle.Center.X - startCircle.Center.X), 2);
@@ -175,9 +174,6 @@ namespace HandPaint
                         tempPointF.X = startCircle.Center.X;
                         tempPointF.Y = startCircle.Center.Y;
                     }
-
-                    //ImageFrame.Draw(startCircle, new Bgr(Color.Red), 2);
-                    //ImageFrame.Draw(depthCircle, new Bgr(Color.Yellow), 5);
                 }
             }
 

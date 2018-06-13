@@ -32,6 +32,7 @@ namespace HandPaint
         private const int MillisecondsToLoad = 200;
         private const int MillisecondsPerTick = 10;
         private static bool handDetecting = true;
+        private HandDetection handDetection = new HandDetection();
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
@@ -123,19 +124,23 @@ namespace HandPaint
 
         public BitmapSource ToBitmapSource(IImage image)
         {
-            var handDetection = new HandDetection();
-            //TODO Podłączyć pod myszkę
-            PointF pointer = handDetection.DetectHand(image.Bitmap);
-            SetMousePosition(image, pointer);
-            Console.WriteLine(handDetection.GetFingerNumb());
-            var tempCircleF = new CircleF(pointer, 10);
+            var pointer = handDetection.DetectHand(image.Bitmap);
             var imageFrame = new Image<Bgr, byte>(image.Bitmap);
-            imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
+            if (Convert.ToInt32(pointer.X) < System.Windows.Forms.Cursor.Position.X + 1 || 
+               Convert.ToInt32(pointer.X) > System.Windows.Forms.Cursor.Position.X - 1)
+                if (Convert.ToInt32(pointer.Y) < System.Windows.Forms.Cursor.Position.Y + 1 ||
+                    Convert.ToInt32(pointer.Y) > System.Windows.Forms.Cursor.Position.Y - 1)
+                {
+                    SetMousePosition(image, pointer);
+                    Console.WriteLine(handDetection.GetFingerNumb());
+                    var tempCircleF = new CircleF(pointer, 10);
+                    imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
+                }
+
             using (var source = imageFrame.Bitmap)
             {
 
-                var ptr = source.GetHbitmap(); //obtain the Hbitmap
-
+                var ptr = source.GetHbitmap(); 
                 var bs = System.Windows.Interop
                     .Imaging.CreateBitmapSourceFromHBitmap(
                         ptr,
@@ -143,7 +148,7 @@ namespace HandPaint
                         Int32Rect.Empty,
                         BitmapSizeOptions.FromEmptyOptions());
 
-                DeleteObject(ptr); //release the HBitmap
+                DeleteObject(ptr);
                 return bs;
             }
         }
