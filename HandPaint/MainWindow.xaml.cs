@@ -32,7 +32,7 @@ namespace HandPaint
         private const int MillisecondsToLoad = 200;
         private const int MillisecondsPerTick = 10;
         private static bool handDetecting = true;
-        private HandDetection handDetection = new HandDetection();
+        //private HandDetection handDetection = new HandDetection();
         private VideoCapture _capture;
         private DispatcherTimer _timer;
         private DispatcherTimer _mouseOverTimer;
@@ -59,7 +59,8 @@ namespace HandPaint
 
         private int _dpiSavedImage = 96;
         private string _filenameSavedImage = "image.jpeg";
-        private const double ColorWheelScale = 3;
+        private const double ColorWheelScale = 4;
+        
 
 
         public MainWindow()
@@ -90,6 +91,18 @@ namespace HandPaint
             var mirrorFrame = new Mat();
             CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
             Canvas.Background = new ImageBrush(ToBitmapSource(mirrorFrame));
+            HandDetection handDetection = new HandDetection();
+            var pointer = handDetection.DetectHand(mirrorFrame.Bitmap);
+            var mousePosition = CountMousePosition(mirrorFrame, pointer);
+            //var tempCircleF = new CircleF(pointer, 10);
+            //imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
+            if ((mousePosition.X - System.Windows.Forms.Cursor.Position.X) < 5 &&
+                (mousePosition.X - System.Windows.Forms.Cursor.Position.X) > -5 &&
+                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) < 5 &&
+                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) > -5)
+            {
+                System.Windows.Forms.Cursor.Position = mousePosition;
+            }
 
         }
 
@@ -124,18 +137,7 @@ namespace HandPaint
 
         public BitmapSource ToBitmapSource(IImage image)
         {
-            var pointer = handDetection.DetectHand(image.Bitmap);
             var imageFrame = new Image<Bgr, byte>(image.Bitmap);
-            if (Convert.ToInt32(pointer.X) < System.Windows.Forms.Cursor.Position.X + 1 || 
-               Convert.ToInt32(pointer.X) > System.Windows.Forms.Cursor.Position.X - 1)
-                if (Convert.ToInt32(pointer.Y) < System.Windows.Forms.Cursor.Position.Y + 1 ||
-                    Convert.ToInt32(pointer.Y) > System.Windows.Forms.Cursor.Position.Y - 1)
-                {
-                    SetMousePosition(image, pointer);
-                    Console.WriteLine(handDetection.GetFingerNumb());
-                    var tempCircleF = new CircleF(pointer, 10);
-                    imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
-                }
 
             using (var source = imageFrame.Bitmap)
             {
@@ -394,14 +396,16 @@ namespace HandPaint
         {
             Interface_MouseEnter();
             ColorWheelGrid.Height *= ColorWheelScale;
-            ColorWheelGrid.Width *= ColorWheelScale;
+            ColorWheelGrid.Width = ((ColorWheelGrid.Width - ColorWheel.Margin.Left) * ColorWheelScale) +
+                                   ColorWheel.Margin.Left;
         }
 
-        private void ColorWheel_MouseLeave(object sender, MouseEventArgs e)
+        private void ColorWheel_OnMouseLeave(object sender, MouseEventArgs e)
         {
             _colorSelecting = false;
             ColorWheelGrid.Height /= ColorWheelScale;
-            ColorWheelGrid.Width /= ColorWheelScale;
+            ColorWheelGrid.Width = ((ColorWheelGrid.Width - ColorWheel.Margin.Left) / ColorWheelScale) +
+                                   ColorWheel.Margin.Left;
         }
 
         private void ClearAll_OnMouseEnter(object sender, MouseEventArgs e)
@@ -424,13 +428,14 @@ namespace HandPaint
             Canvas.Children.Clear();
         }
 
-        private void SetMousePosition(IImage image, PointF pointRelativeToImage)
+        private System.Drawing.Point CountMousePosition(IImage image, PointF pointRelativeToImage)
         {
             var imageHeight = image.Bitmap.Height;
             var imageWidth = image.Bitmap.Width;
             var xMultiplier = 1920 / imageWidth; //TODO zmienić wartości nie na sztywno
             var yMultiplier = 1080 / imageHeight;
-            System.Windows.Forms.Cursor.Position = new System.Drawing.Point(Convert.ToInt32(pointRelativeToImage.X * xMultiplier), Convert.ToInt32(pointRelativeToImage.Y * yMultiplier));
+            var result = new System.Drawing.Point(Convert.ToInt32(pointRelativeToImage.X * xMultiplier), Convert.ToInt32(pointRelativeToImage.Y * yMultiplier));
+            return result;
         }
     }
 }

@@ -48,11 +48,11 @@
         </Rectangle>
         <TextBlock x:Name="SelectedModeTextBox" HorizontalAlignment="Right" Margin="0,60,1173.6,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Foreground="Red" FontSize="20"/>
 
-        <Grid x:Name="ColorWheelGrid" HorizontalAlignment="Right" Height="210" VerticalAlignment="Top" Width="320" Margin="0,0,0,0">
+        <Grid x:Name="ColorWheelGrid" HorizontalAlignment="Right" Height="210" VerticalAlignment="Top" Width="320" Margin="0,0,0,0" >
             <TextBlock Margin="0,20,264.6,0" TextWrapping="Wrap" Text="Color:" VerticalAlignment="Top" Foreground="Black" FontSize="20" HorizontalAlignment="Left"/>
             <Rectangle x:Name="SelectedColorRectangle" Fill="Red" Height="50" Margin="65,10,0,0" Stroke="Black" VerticalAlignment="Top" HorizontalAlignment="Left" Width="50"/>
             <TextBlock Margin="0,83,277.6,0" TextWrapping="Wrap" Text="Size:" VerticalAlignment="Top" Foreground="Black" FontSize="20" HorizontalAlignment="Left"/>
-            <Image x:Name="ColorWheel" Source="Resources/kolo-barw.png" MouseDown="ColorWheel_MouseDown" MouseUp="ColorWheel_MouseUp" MouseMove="ColorWheel_MouseMove" MouseEnter="ColorWheel_OnMouseEnter" MouseLeave="ColorWheel_MouseLeave" Margin="120,0,0,0" />
+            <Image x:Name="ColorWheel" Source="Resources/kolo-barw.png" MouseDown="ColorWheel_MouseDown" MouseUp="ColorWheel_MouseUp" MouseMove="ColorWheel_MouseMove" Margin="110,0,0,0" MouseEnter="ColorWheel_OnMouseEnter" MouseLeave="ColorWheel_OnMouseLeave"/>
         </Grid>
 
     </Grid>
