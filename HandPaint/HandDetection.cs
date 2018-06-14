@@ -18,8 +18,8 @@ namespace HandPaint
     public class HandDetection
     {
         private Image<Bgr, byte> ImageFrame;
-        private IColor hsv_min = new Hsv(90, 100, 100);
-        private IColor hsv_max = new Hsv(120, 200, 230);
+        public Hsv hsv_min = new Hsv(160, 100, 100);
+        public Hsv hsv_max = new Hsv(180, 200, 230);
         private readonly IColor YCrCb_min = new Ycc(100, 131, 80);
         private readonly IColor YCrCb_max = new Ycc(200, 185, 135);
         private RotatedRect box;
@@ -41,9 +41,13 @@ namespace HandPaint
 
             ExtractContourAndHull(ImageFrame, skin);
 
-            
-
-            return DrawAndComputeFingersNum();
+            var result = DrawAndComputeFingersNum();
+            startIndex = null;
+            endIndex = null;
+            depthIndex = null;
+            defects = null;
+            currentContour = null;
+            return result;
         }
 
         private void ExtractContourAndHull(Image<Bgr,byte> originalImage, Image<Gray, byte> skin)
@@ -187,7 +191,14 @@ namespace HandPaint
 
         public bool IsDrawing()
         {
-            return fingerNumb < 3;
+            if ((fingerNumb < 3) && (fingerNumb > 0))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public int GetFingerNumb()

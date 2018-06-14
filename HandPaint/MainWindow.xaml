@@ -46,14 +46,29 @@
                 <ImageBrush ImageSource="Resources/clear_all.png" Stretch="UniformToFill"/>
             </Rectangle.Fill>
         </Rectangle>
+        <Rectangle x:Name="ChangeBackground" HorizontalAlignment="Left" Height="50" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeBackground_OnMouseEnter"  Margin="10,140,0,0">
+            <Rectangle.Fill>
+                <ImageBrush ImageSource="Resources/empty.png" Stretch="UniformToFill"/>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle x:Name="ChangeDetection" HorizontalAlignment="Left" Height="50" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeDetection_OnMouseEnter" Margin="10,200,0,0">
+            <Rectangle.Fill>
+                <ImageBrush ImageSource="Resources/empty.png" Stretch="UniformToFill"/>
+            </Rectangle.Fill>
+        </Rectangle>
         <TextBlock x:Name="SelectedModeTextBox" HorizontalAlignment="Right" Margin="0,60,1173.6,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Foreground="Red" FontSize="20"/>
 
         <Grid x:Name="ColorWheelGrid" HorizontalAlignment="Right" Height="210" VerticalAlignment="Top" Width="320" Margin="0,0,0,0" >
             <TextBlock Margin="0,20,264.6,0" TextWrapping="Wrap" Text="Color:" VerticalAlignment="Top" Foreground="Black" FontSize="20" HorizontalAlignment="Left"/>
             <Rectangle x:Name="SelectedColorRectangle" Fill="Red" Height="50" Margin="65,10,0,0" Stroke="Black" VerticalAlignment="Top" HorizontalAlignment="Left" Width="50"/>
-            <TextBlock Margin="0,83,277.6,0" TextWrapping="Wrap" Text="Size:" VerticalAlignment="Top" Foreground="Black" FontSize="20" HorizontalAlignment="Left"/>
+            <TextBlock x:Name="SizeTextBlock" Margin="0,83,277.6,0" TextWrapping="Wrap" Text="Size:" VerticalAlignment="Top" Foreground="Black" FontSize="20" HorizontalAlignment="Left"/>
             <Image x:Name="ColorWheel" Source="Resources/kolo-barw.png" MouseDown="ColorWheel_MouseDown" MouseUp="ColorWheel_MouseUp" MouseMove="ColorWheel_MouseMove" Margin="110,0,0,0" MouseEnter="ColorWheel_OnMouseEnter" MouseLeave="ColorWheel_OnMouseLeave"/>
         </Grid>
+        <Rectangle x:Name="OpenConfigurationWindow" HorizontalAlignment="Left" Height="50" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="OpenConfigurationWindow_OnMouseEnter" Margin="10,260,0,0">
+            <Rectangle.Fill>
+                <ImageBrush ImageSource="Resources/empty.png" Stretch="UniformToFill"/>
+            </Rectangle.Fill>
+        </Rectangle>
 
     </Grid>
 </Window>

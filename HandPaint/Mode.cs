@@ -9,4 +9,10 @@
         Brush,
         Erase
     }
+
+    public enum BackgroundMode
+    {
+        White,
+        Camera
+    }
 }

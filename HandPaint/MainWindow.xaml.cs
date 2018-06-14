@@ -31,10 +31,10 @@ namespace HandPaint
 
         private const int MillisecondsToLoad = 200;
         private const int MillisecondsPerTick = 10;
-        private static bool handDetecting = true;
-        //private HandDetection handDetection = new HandDetection();
+        private HandDetection handDetection = new HandDetection();
         private VideoCapture _capture;
-        private DispatcherTimer _timer;
+        private DispatcherTimer _videoTimer;
+        private DispatcherTimer _detectorTimer;
         private DispatcherTimer _mouseOverTimer;
         private Action _action;
         private bool _isMouseOverAction;
@@ -60,8 +60,15 @@ namespace HandPaint
         private int _dpiSavedImage = 96;
         private string _filenameSavedImage = "image.jpeg";
         private const double ColorWheelScale = 4;
-        
 
+        private const int PixelDistance = 2000;
+
+        private BackgroundMode _currentBackgroundMode;
+        private bool _detectionEnabled;
+        private Hsv _minHsv;
+        private Hsv _maxHsv;
+        private bool _detectDrawing = false;
+        
 
         public MainWindow()
         {
@@ -72,10 +79,15 @@ namespace HandPaint
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _capture = new VideoCapture();
-            _timer = new DispatcherTimer();
-            _timer.Tick += Timer_Tick;
-            _timer.Interval = new TimeSpan(0, 0, 0, 0, 1);
-            _timer.Start();
+            _videoTimer = new DispatcherTimer();
+            _videoTimer.Tick += VideoTimerTick;
+            _videoTimer.Interval = new TimeSpan(0, 0, 0, 0, 1);
+            _videoTimer.Start();
+
+            _detectorTimer = new DispatcherTimer();
+            _detectorTimer.Tick += DetectorTimerTick;
+            _detectorTimer.Interval = new TimeSpan(0, 0, 0, 0, 10);
+            _detectorTimer.Start();
 
             _mouseOverTimer = new DispatcherTimer();
             _mouseOverTimer.Tick += MauseOverTimer_Tick;
@@ -83,27 +95,121 @@ namespace HandPaint
             SelectedColorRectangle.Fill = _selectedBrush;
 
             SelectedModeTextBox.Text = _mode.ToString();
+
+            _currentBackgroundMode = BackgroundMode.Camera;
+            _detectionEnabled = false;
+            _minHsv = handDetection.hsv_min;
+            _maxHsv = handDetection.hsv_max;
+            SizeTextBlock.Text = "Size: " + _strokeThickness;
+
         }
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private void VideoTimerTick(object sender, EventArgs e)
         {
             var currentFrame = _capture.QueryFrame();
             var mirrorFrame = new Mat();
             CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
-            Canvas.Background = new ImageBrush(ToBitmapSource(mirrorFrame));
-            HandDetection handDetection = new HandDetection();
+            if (_currentBackgroundMode == BackgroundMode.Camera)
+            {
+                Canvas.Background = new ImageBrush(ToBitmapSource(mirrorFrame));
+            }
+        }
+
+        private void DetectorTimerTick(object sender, EventArgs e)
+        {
+            var currentFrame = _capture.QueryFrame();
+            var mirrorFrame = new Mat();
+            CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
             var pointer = handDetection.DetectHand(mirrorFrame.Bitmap);
             var mousePosition = CountMousePosition(mirrorFrame, pointer);
-            //var tempCircleF = new CircleF(pointer, 10);
-            //imageFrame.Draw(tempCircleF, new Bgr(System.Drawing.Color.BlueViolet));
-            if ((mousePosition.X - System.Windows.Forms.Cursor.Position.X) < 5 &&
-                (mousePosition.X - System.Windows.Forms.Cursor.Position.X) > -5 &&
-                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) < 5 &&
-                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) > -5)
-            {
-                System.Windows.Forms.Cursor.Position = mousePosition;
-            }
 
+            if ((mousePosition.X - System.Windows.Forms.Cursor.Position.X) < PixelDistance &&
+                (mousePosition.X - System.Windows.Forms.Cursor.Position.X) > -PixelDistance &&
+                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) < PixelDistance &&
+                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) > -PixelDistance)
+            {
+                if (_detectionEnabled)
+                {
+                    System.Windows.Forms.Cursor.Position = mousePosition;
+                    bool handDetectDrowing = handDetection.IsDrawing();
+                    if (!_detectDrawing && handDetectDrowing)
+                    {
+                        _detectDrawing = true;
+
+                        _drawing = true;
+                        _startPoint = Mouse.GetPosition(Canvas);
+                        switch (_mode)
+                        {
+                            case Mode.None:
+                                break;
+                            case Mode.Line:
+                                _myLine = new Line
+                                {
+                                    X1 = Mouse.GetPosition(Canvas).X,
+                                    Y1 = Mouse.GetPosition(Canvas).Y,
+                                    X2 = Mouse.GetPosition(Canvas).X,
+                                    Y2 = Mouse.GetPosition(Canvas).Y,
+                                    Stroke = _selectedBrush,
+                                    StrokeThickness = _strokeThickness
+                                };
+                                Canvas.Children.Add(_myLine);
+                                break;
+                            case Mode.Rectangle:
+                                _myRectangle = new Rectangle
+                                {
+                                    Stroke = _selectedBrush,
+                                    StrokeThickness = _strokeThickness
+                                };
+                                Canvas.SetLeft(_myRectangle, _startPoint.X);
+                                Canvas.SetTop(_myRectangle, _startPoint.Y);
+                                Canvas.Children.Add(_myRectangle);
+                                break;
+                            case Mode.Ellipse:
+                                _myEllipse = new Ellipse
+                                {
+                                    Stroke = _selectedBrush,
+                                    StrokeThickness = _strokeThickness
+                                };
+                                Canvas.SetLeft(_myEllipse, _startPoint.X);
+                                Canvas.SetTop(_myEllipse, _startPoint.Y);
+                                Canvas.Children.Add(_myEllipse);
+                                break;
+                            case Mode.Brush:
+                                //_brushTimer.Start();
+                                _pathGeometry = new PathGeometry();
+                                _pathFigure = new PathFigure();
+                                _pathFigure.StartPoint = _startPoint;
+                                _pathFigure.IsClosed = false;
+                                _pathGeometry.Figures.Add(_pathFigure);
+                                _path = new Path();
+                                _path.Stroke = _selectedBrush;
+                                _path.StrokeThickness = _strokeThickness;
+                                _path.Data = _pathGeometry;
+                                Canvas.Children.Add(_path);
+
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+
+                        }
+                    }
+                    else
+                    {
+                        if (_detectDrawing && handDetectDrowing)
+                        {
+                            _detectDrawing = false;
+                            if (_drawing)
+                            {
+                                _drawing = false;
+                                _myLine = null;
+                                _myRectangle = null;
+                                _myEllipse = null;
+                                _path = null;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void MauseOverTimer_Tick(object sender, EventArgs e)
@@ -436,6 +542,63 @@ namespace HandPaint
             var yMultiplier = 1080 / imageHeight;
             var result = new System.Drawing.Point(Convert.ToInt32(pointRelativeToImage.X * xMultiplier), Convert.ToInt32(pointRelativeToImage.Y * yMultiplier));
             return result;
+        }
+
+        private void ChangeBackground_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            StartMauseOverAction(ChangeBackgroundMethod, sender);
+        }
+
+        private void ChangeBackgroundMethod()
+        {
+            if (_currentBackgroundMode == BackgroundMode.Camera)
+            {
+                _currentBackgroundMode = BackgroundMode.White;
+                Canvas.Background = Brushes.White;
+                return;
+            }
+
+            if (_currentBackgroundMode == BackgroundMode.White)
+            {
+                _currentBackgroundMode = BackgroundMode.Camera;
+                return;
+            }
+        }
+
+        private void ChangeDetection_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            StartMauseOverAction(ChangeDetectionMethod, sender);
+        }
+
+        private void ChangeDetectionMethod()
+        {
+            _detectionEnabled = !_detectionEnabled;
+        }
+
+        public void SetHsvValues(Hsv min, Hsv max)
+        {
+            _minHsv = min;
+            _maxHsv = max;
+            handDetection.hsv_min = _minHsv;
+            handDetection.hsv_max = _maxHsv;
+        }
+
+        private void OpenConfigurationWindow_OnMouseEnter(object sender, MouseEventArgs e)
+        {
+            StartMauseOverAction(OpenConfigurationWindowMethod, sender);
+        }
+
+        private void OpenConfigurationWindowMethod()
+        {
+            _minHsv.Hue = 0;
+            _minHsv.Satuation = 0;
+            _minHsv.Value = 0;
+            _maxHsv.Hue = 180;
+            _maxHsv.Satuation = 255;
+            _maxHsv.Value = 255;
+            ColorConfiguration colorConfiguration = new ColorConfiguration(_minHsv, _maxHsv, this);
+            //colorConfiguration.Parent = this;
+            colorConfiguration.Show();
         }
     }
 }
