@@ -127,6 +127,7 @@ namespace HandPaint
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            _capture.Stop();
             _mainWindow.SetHsvValues(_hsvMin, _hsvMax);
         }
     }

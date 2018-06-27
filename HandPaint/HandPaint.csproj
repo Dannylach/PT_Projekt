@@ -81,6 +81,7 @@
     <Compile Include="ColorConfiguration.xaml.cs">
       <DependentUpon>ColorConfiguration.xaml</DependentUpon>
     </Compile>
+    <Compile Include="HandDetectorEventArgs.cs" />
     <Compile Include="SkinDetector\CustomYCrCbSkinDetector.cs" />
     <Compile Include="SkinDetector\HsvSkinDetector.cs" />
     <Compile Include="SkinDetector\IColorSkinDetector.cs" />

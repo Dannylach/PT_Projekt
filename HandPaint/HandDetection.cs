@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
@@ -15,8 +17,19 @@ using Size = System.Drawing.Size;
 
 namespace HandPaint
 {
+    public struct HandDetectorState
+    {
+        public PointF Coordinates { get; set; }
+        public bool IsActive { get; set; }
+    }
     public class HandDetection
     {
+        public event EventHandler<HandDetectorEventArgs> HandDetectorEvent;
+        
+
+        private const int QueueSize = 20;
+        private const float PossibleDiffrence = 20.0f;
+
         private Image<Bgr, byte> ImageFrame;
         public Hsv hsv_min = new Hsv(160, 100, 100);
         public Hsv hsv_max = new Hsv(180, 200, 230);
@@ -31,9 +44,104 @@ namespace HandPaint
         private int fingerNumb;
         
 
-        public PointF DetectHand(Bitmap source)
+
+        private VideoCapture _capture;
+
+        private Queue<HandDetectorState> previousStates;
+
+        private DispatcherTimer _detectorTimer;
+        public HandDetectorState CurrentState { get; set; }
+
+        public HandDetection()
         {
-            ImageFrame = new Image<Bgr, byte>(source); 
+        }
+
+        public void Stop()
+        {
+            _detectorTimer.Stop();
+            _capture.Stop();
+        }
+        public void Run()
+        {
+            previousStates = new Queue<HandDetectorState>(QueueSize);
+            _capture = new VideoCapture();
+
+            //_detectorTimer = new DispatcherTimer();
+            //_detectorTimer.Tick += DetectorTimerTick;
+            //_detectorTimer.Interval = new TimeSpan(0, 0, 0, 0, 10);
+            //_detectorTimer.Start();
+            while (true)
+            {
+                var currentFrame = _capture.QueryFrame();
+                var mirrorFrame = new Mat();
+                CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
+                var handDetectorState = DetectHand(mirrorFrame.Bitmap);
+                float sumx = 0;
+                float sumy = 0;
+                int isActiveCount = 0;
+                foreach (var state in previousStates)
+                {
+                    sumx += state.Coordinates.X;
+                    sumy += state.Coordinates.Y;
+                    if (state.IsActive)
+                    {
+                        isActiveCount++;
+                    }
+                }
+
+                float avgx = sumx / previousStates.Count();
+                float avgy = sumy / previousStates.Count();
+
+                if (Math.Abs(avgx - handDetectorState.Coordinates.X) <= PossibleDiffrence && Math.Abs(avgy - handDetectorState.Coordinates.Y) <= PossibleDiffrence)
+                {
+                    CurrentState = handDetectorState;
+                }
+
+                if (previousStates.Count >= QueueSize)
+                {
+                    previousStates.Dequeue();
+                }
+                previousStates.Enqueue(handDetectorState);
+                Thread.Sleep(0);
+            }
+
+        }
+        private void DetectorTimerTick(object sender, EventArgs e)
+        {
+            var currentFrame = _capture.QueryFrame();
+            var mirrorFrame = new Mat();
+            CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
+            var handDetectorState = DetectHand(mirrorFrame.Bitmap);
+            float sumx = 0;
+            float sumy = 0;
+            int isActiveCount = 0;
+            foreach (var state in previousStates)
+            {
+                sumx += state.Coordinates.X;
+                sumy += state.Coordinates.Y;
+                if (state.IsActive)
+                {
+                    isActiveCount++;
+                }
+            }
+
+            float avgx = sumx / previousStates.Count();
+            float avgy = sumy / previousStates.Count();
+
+            if (Math.Abs(avgx - handDetectorState.Coordinates.X) <= PossibleDiffrence && Math.Abs(avgy - handDetectorState.Coordinates.Y) <= PossibleDiffrence)
+            {
+                CurrentState = handDetectorState;
+            }
+
+            if (previousStates.Count >= QueueSize)
+            {
+                previousStates.Dequeue();
+            }
+            previousStates.Enqueue(handDetectorState);
+        }
+        public HandDetectorState DetectHand(Bitmap source)
+        {
+            ImageFrame = new Image<Bgr, byte>(source);
 
             var skinDetector = new HsvSkinDetector();
 
@@ -47,10 +155,12 @@ namespace HandPaint
             depthIndex = null;
             defects = null;
             currentContour = null;
-            return result;
+            var handDetectorState =
+                new HandDetectorState() { Coordinates = result, IsActive = IsDrawing() };
+            return handDetectorState;
         }
 
-        private void ExtractContourAndHull(Image<Bgr,byte> originalImage, Image<Gray, byte> skin)
+        private void ExtractContourAndHull(Image<Bgr, byte> originalImage, Image<Gray, byte> skin)
         {
             var contours = new VectorOfVectorOfPoint();
             CvInvoke.FindContours(skin, contours, new Mat(), RetrType.List, ChainApproxMethod.ChainApproxSimple);
@@ -59,7 +169,7 @@ namespace HandPaint
             if (contours.Size != 0)
                 biggestContour = contours[0];
 
-            for (var i=0; i < contours.Size; i++)
+            for (var i = 0; i < contours.Size; i++)
             {
                 var result1 = contours[i].Size;
                 if (result1 <= result2) continue;
@@ -68,7 +178,7 @@ namespace HandPaint
             }
 
             if (biggestContour == null) return;
-            
+
             currentContour = new VectorOfPoint();
             CvInvoke.ApproxPolyDP(biggestContour, currentContour, 0, true);
             //TODO Get to know why it gives exception
@@ -81,7 +191,7 @@ namespace HandPaint
                 pointsToFs[i] = new PointF(currentContour[i].X, currentContour[i].Y);
 
             var hull = CvInvoke.ConvexHull(pointsToFs, true);
-            
+
             pointsToFs = new PointF[biggestContour.Size];
             for (var i = 0; i < biggestContour.Size; i++)
                 pointsToFs[i] = new PointF(biggestContour[i].X, biggestContour[i].Y);
@@ -91,10 +201,10 @@ namespace HandPaint
 
             var ps = new Point[points.Length];
             for (var i = 0; i < points.Length; i++)
-                ps[i] = new Point((int) points[i].X, (int) points[i].Y);
+                ps[i] = new Point((int)points[i].X, (int)points[i].Y);
 
             var hullToPoints = new Point[hull.Length];
-            for (var i=0; i<hull.Length; i++)
+            for (var i = 0; i < hull.Length; i++)
                 hullToPoints[i] = Point.Round(hull[i]);
 
             originalImage.DrawPolyline(hullToPoints, true, new Bgr(200, 125, 75), 2);
@@ -148,11 +258,11 @@ namespace HandPaint
 
                 PointF endPoint = new PointF(currentContour[endIndex[i, 0]].X, currentContour[endIndex[i, 0]].Y);
 
-                LineSegment2D startDepthLine = new LineSegment2D(new Point((int) startPoint.X, (int) startPoint.Y),
-                    new Point((int) depthPoint.X, (int) depthPoint.Y));
+                LineSegment2D startDepthLine = new LineSegment2D(new Point((int)startPoint.X, (int)startPoint.Y),
+                    new Point((int)depthPoint.X, (int)depthPoint.Y));
 
-                LineSegment2D depthEndLine = new LineSegment2D(new Point((int) depthPoint.X, (int) depthPoint.Y),
-                    new Point((int) endPoint.X, (int) endPoint.Y));
+                LineSegment2D depthEndLine = new LineSegment2D(new Point((int)depthPoint.X, (int)depthPoint.Y),
+                    new Point((int)endPoint.X, (int)endPoint.Y));
 
                 CircleF startCircle = new CircleF(startPoint, 5f);
 

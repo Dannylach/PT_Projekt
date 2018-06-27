@@ -6,6 +6,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Emgu.CV;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -34,7 +35,6 @@ namespace HandPaint
         private HandDetection handDetection = new HandDetection();
         private VideoCapture _capture;
         private DispatcherTimer _videoTimer;
-        private DispatcherTimer _detectorTimer;
         private DispatcherTimer _mouseOverTimer;
         private Action _action;
         private bool _isMouseOverAction;
@@ -68,7 +68,8 @@ namespace HandPaint
         private Hsv _minHsv;
         private Hsv _maxHsv;
         private bool _detectDrawing = false;
-        
+
+        private Thread _detectorThread;
 
         public MainWindow()
         {
@@ -81,13 +82,8 @@ namespace HandPaint
             _capture = new VideoCapture();
             _videoTimer = new DispatcherTimer();
             _videoTimer.Tick += VideoTimerTick;
-            _videoTimer.Interval = new TimeSpan(0, 0, 0, 0, 1);
+            _videoTimer.Interval = new TimeSpan(0, 0, 0, 0, 30);
             _videoTimer.Start();
-
-            _detectorTimer = new DispatcherTimer();
-            _detectorTimer.Tick += DetectorTimerTick;
-            _detectorTimer.Interval = new TimeSpan(0, 0, 0, 0, 10);
-            _detectorTimer.Start();
 
             _mouseOverTimer = new DispatcherTimer();
             _mouseOverTimer.Tick += MauseOverTimer_Tick;
@@ -102,6 +98,10 @@ namespace HandPaint
             _maxHsv = handDetection.hsv_max;
             SizeTextBlock.Text = "Size: " + _strokeThickness;
 
+            _detectorThread = new Thread(handDetection.Run);
+            _detectorThread.Start();
+
+
         }
 
         private void VideoTimerTick(object sender, EventArgs e)
@@ -113,104 +113,14 @@ namespace HandPaint
             {
                 Canvas.Background = new ImageBrush(ToBitmapSource(mirrorFrame));
             }
-        }
 
-        private void DetectorTimerTick(object sender, EventArgs e)
-        {
-            var currentFrame = _capture.QueryFrame();
-            var mirrorFrame = new Mat();
-            CvInvoke.Flip(currentFrame, mirrorFrame, FlipType.Horizontal);
-            var pointer = handDetection.DetectHand(mirrorFrame.Bitmap);
-            var mousePosition = CountMousePosition(mirrorFrame, pointer);
-
-            if ((mousePosition.X - System.Windows.Forms.Cursor.Position.X) < PixelDistance &&
-                (mousePosition.X - System.Windows.Forms.Cursor.Position.X) > -PixelDistance &&
-                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) < PixelDistance &&
-                (mousePosition.Y - System.Windows.Forms.Cursor.Position.Y) > -PixelDistance)
+            if (_detectionEnabled)
             {
-                if (_detectionEnabled)
-                {
-                    System.Windows.Forms.Cursor.Position = mousePosition;
-                    bool handDetectDrowing = handDetection.IsDrawing();
-                    if (!_detectDrawing && handDetectDrowing)
-                    {
-                        _detectDrawing = true;
-
-                        _drawing = true;
-                        _startPoint = Mouse.GetPosition(Canvas);
-                        switch (_mode)
-                        {
-                            case Mode.None:
-                                break;
-                            case Mode.Line:
-                                _myLine = new Line
-                                {
-                                    X1 = Mouse.GetPosition(Canvas).X,
-                                    Y1 = Mouse.GetPosition(Canvas).Y,
-                                    X2 = Mouse.GetPosition(Canvas).X,
-                                    Y2 = Mouse.GetPosition(Canvas).Y,
-                                    Stroke = _selectedBrush,
-                                    StrokeThickness = _strokeThickness
-                                };
-                                Canvas.Children.Add(_myLine);
-                                break;
-                            case Mode.Rectangle:
-                                _myRectangle = new Rectangle
-                                {
-                                    Stroke = _selectedBrush,
-                                    StrokeThickness = _strokeThickness
-                                };
-                                Canvas.SetLeft(_myRectangle, _startPoint.X);
-                                Canvas.SetTop(_myRectangle, _startPoint.Y);
-                                Canvas.Children.Add(_myRectangle);
-                                break;
-                            case Mode.Ellipse:
-                                _myEllipse = new Ellipse
-                                {
-                                    Stroke = _selectedBrush,
-                                    StrokeThickness = _strokeThickness
-                                };
-                                Canvas.SetLeft(_myEllipse, _startPoint.X);
-                                Canvas.SetTop(_myEllipse, _startPoint.Y);
-                                Canvas.Children.Add(_myEllipse);
-                                break;
-                            case Mode.Brush:
-                                //_brushTimer.Start();
-                                _pathGeometry = new PathGeometry();
-                                _pathFigure = new PathFigure();
-                                _pathFigure.StartPoint = _startPoint;
-                                _pathFigure.IsClosed = false;
-                                _pathGeometry.Figures.Add(_pathFigure);
-                                _path = new Path();
-                                _path.Stroke = _selectedBrush;
-                                _path.StrokeThickness = _strokeThickness;
-                                _path.Data = _pathGeometry;
-                                Canvas.Children.Add(_path);
-
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-
-                        }
-                    }
-                    else
-                    {
-                        if (_detectDrawing && handDetectDrowing)
-                        {
-                            _detectDrawing = false;
-                            if (_drawing)
-                            {
-                                _drawing = false;
-                                _myLine = null;
-                                _myRectangle = null;
-                                _myEllipse = null;
-                                _path = null;
-                            }
-                        }
-                    }
-                }
+                var mousePosition = CountMousePosition(mirrorFrame, handDetection.CurrentState.Coordinates);
+                System.Windows.Forms.Cursor.Position = mousePosition;
             }
         }
+
 
         private void MauseOverTimer_Tick(object sender, EventArgs e)
         {
@@ -421,6 +331,7 @@ namespace HandPaint
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            _detectorThread.Abort();
         }
 
         private void ColorWheel_MouseDown(object sender, MouseButtonEventArgs e)
@@ -598,7 +509,7 @@ namespace HandPaint
             _maxHsv.Value = 255;
             ColorConfiguration colorConfiguration = new ColorConfiguration(_minHsv, _maxHsv, this);
             //colorConfiguration.Parent = this;
-            colorConfiguration.Show();
+            colorConfiguration.ShowDialog();
         }
     }
 }
