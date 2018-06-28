@@ -20,6 +20,7 @@ namespace HandPaint
     public struct HandDetectorState
     {
         public PointF Coordinates { get; set; }
+        public Point CountedCoordinates { get; set; }
         public bool IsActive { get; set; }
     }
     public class HandDetection
@@ -27,8 +28,8 @@ namespace HandPaint
         public event EventHandler<HandDetectorEventArgs> HandDetectorEvent;
         
 
-        private const int QueueSize = 20;
-        private const float PossibleDiffrence = 20.0f;
+        private const int QueueSize = 30;
+        private const float PossibleDiffrence = 30.0f;
 
         private Image<Bgr, byte> ImageFrame;
         public Hsv hsv_min = new Hsv(160, 100, 100);
@@ -51,6 +52,11 @@ namespace HandPaint
 
         private DispatcherTimer _detectorTimer;
         public HandDetectorState CurrentState { get; set; }
+
+        protected virtual void OnActionChanged(HandDetectorState handDetectorState)
+        {
+            HandDetectorEvent?.Invoke(this, new HandDetectorEventArgs() { HandDetectorState = handDetectorState });
+        }
 
         public HandDetection()
         {
@@ -94,6 +100,10 @@ namespace HandPaint
 
                 if (Math.Abs(avgx - handDetectorState.Coordinates.X) <= PossibleDiffrence && Math.Abs(avgy - handDetectorState.Coordinates.Y) <= PossibleDiffrence)
                 {
+                    if ((handDetectorState.IsActive && !CurrentState.IsActive) || (!handDetectorState.IsActive && CurrentState.IsActive))
+                    {
+                        OnActionChanged(handDetectorState);
+                    }
                     CurrentState = handDetectorState;
                 }
 
@@ -101,6 +111,8 @@ namespace HandPaint
                 {
                     previousStates.Dequeue();
                 }
+
+               
                 previousStates.Enqueue(handDetectorState);
                 Thread.Sleep(0);
             }
@@ -156,7 +168,7 @@ namespace HandPaint
             defects = null;
             currentContour = null;
             var handDetectorState =
-                new HandDetectorState() { Coordinates = result, IsActive = IsDrawing() };
+                new HandDetectorState() { Coordinates = result, IsActive = IsDrawing(), CountedCoordinates = MainWindow.CountMousePosition(ImageFrame, result)};
             return handDetectorState;
         }
 

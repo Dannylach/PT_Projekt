@@ -99,9 +99,90 @@ namespace HandPaint
             SizeTextBlock.Text = "Size: " + _strokeThickness;
 
             _detectorThread = new Thread(handDetection.Run);
+            _detectorThread.SetApartmentState(ApartmentState.STA);
             _detectorThread.Start();
 
+            handDetection.HandDetectorEvent += OnActionChanged;
 
+        }
+
+        private void OnActionChanged(object sender, HandDetectorEventArgs e)
+        {
+            Dispatcher.Invoke(() => {
+                if (_detectionEnabled)
+                {
+                    if (e.HandDetectorState.IsActive)
+                    {
+                        _drawing = true;
+                        _startPoint = new Point(e.HandDetectorState.CountedCoordinates.X, e.HandDetectorState.CountedCoordinates.Y);
+                        switch (_mode)
+                        {
+                            case Mode.None:
+                                break;
+                            case Mode.Line:
+                                _myLine = new Line
+                                {
+                                    X1 = _startPoint.X,
+                                    Y1 = _startPoint.Y,
+                                    X2 = _startPoint.X,
+                                    Y2 = _startPoint.Y,
+                                    Stroke = _selectedBrush,
+                                    StrokeThickness = _strokeThickness
+                                };
+                                Canvas.Children.Add(_myLine);
+                                break;
+                            case Mode.Rectangle:
+                                _myRectangle = new Rectangle
+                                {
+                                    Stroke = _selectedBrush,
+                                    StrokeThickness = _strokeThickness
+                                };
+                                Canvas.SetLeft(_myRectangle, _startPoint.X);
+                                Canvas.SetTop(_myRectangle, _startPoint.Y);
+                                Canvas.Children.Add(_myRectangle);
+                                break;
+                            case Mode.Ellipse:
+                                _myEllipse = new Ellipse
+                                {
+                                    Stroke = _selectedBrush,
+                                    StrokeThickness = _strokeThickness
+                                };
+                                Canvas.SetLeft(_myEllipse, _startPoint.X);
+                                Canvas.SetTop(_myEllipse, _startPoint.Y);
+                                Canvas.Children.Add(_myEllipse);
+                                break;
+                            case Mode.Brush:
+                                //_brushTimer.Start();
+                                _pathGeometry = new PathGeometry();
+                                _pathFigure = new PathFigure();
+                                _pathFigure.StartPoint = _startPoint;
+                                _pathFigure.IsClosed = false;
+                                _pathGeometry.Figures.Add(_pathFigure);
+                                _path = new Path();
+                                _path.Stroke = _selectedBrush;
+                                _path.StrokeThickness = _strokeThickness;
+                                _path.Data = _pathGeometry;
+                                Canvas.Children.Add(_path);
+
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                    else
+                    {
+                        if (_drawing)
+                        {
+                            _drawing = false;
+                            _myLine = null;
+                            _myRectangle = null;
+                            _myEllipse = null;
+                            _path = null;
+                        }
+                    }
+                }
+            });
+            
         }
 
         private void VideoTimerTick(object sender, EventArgs e)
@@ -245,7 +326,7 @@ namespace HandPaint
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
         {
 
-            if (e.LeftButton == MouseButtonState.Released || !_drawing)
+            if (!_drawing)
                 return;
 
             var pos = e.GetPosition(Canvas);
@@ -445,7 +526,7 @@ namespace HandPaint
             Canvas.Children.Clear();
         }
 
-        private System.Drawing.Point CountMousePosition(IImage image, PointF pointRelativeToImage)
+        public static System.Drawing.Point CountMousePosition(IImage image, PointF pointRelativeToImage)
         {
             var imageHeight = image.Bitmap.Height;
             var imageWidth = image.Bitmap.Width;

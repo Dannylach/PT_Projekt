@@ -54,7 +54,7 @@ namespace HandPaint
             _capture = new VideoCapture();
             _videoTimer = new DispatcherTimer();
             _videoTimer.Tick += VideoTimerTick;
-            _videoTimer.Interval = new TimeSpan(0, 0, 0, 0, 1);
+            _videoTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
             _videoTimer.Start();
             _mainWindow = window;
         }
