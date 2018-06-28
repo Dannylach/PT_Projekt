@@ -102,6 +102,10 @@ namespace HandPaint
                 {
                     if ((handDetectorState.IsActive && !CurrentState.IsActive) || (!handDetectorState.IsActive && CurrentState.IsActive))
                     {
+                        if (handDetectorState.IsActive && isActiveCount < QueueSize / 1.5)
+                        {
+                            handDetectorState.IsActive = false;
+                        }
                         OnActionChanged(handDetectorState);
                     }
                     CurrentState = handDetectorState;
