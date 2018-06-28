@@ -48,12 +48,12 @@
         </Rectangle>
         <Rectangle x:Name="ChangeBackground" HorizontalAlignment="Left" Height="50" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeBackground_OnMouseEnter"  Margin="10,140,0,0">
             <Rectangle.Fill>
-                <ImageBrush ImageSource="Resources/empty.png" Stretch="UniformToFill"/>
+                <ImageBrush ImageSource="Resources/change.png" Stretch="UniformToFill"/>
             </Rectangle.Fill>
         </Rectangle>
         <Rectangle x:Name="ChangeDetection" HorizontalAlignment="Left" Height="50" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="ChangeDetection_OnMouseEnter" Margin="10,200,0,0">
             <Rectangle.Fill>
-                <ImageBrush ImageSource="Resources/empty.png" Stretch="UniformToFill"/>
+                <ImageBrush ImageSource="Resources/hand.png" Stretch="Uniform"/>
             </Rectangle.Fill>
         </Rectangle>
         <TextBlock x:Name="SelectedModeTextBox" HorizontalAlignment="Right" Margin="0,60,1173.6,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Foreground="Red" FontSize="20"/>
@@ -66,7 +66,7 @@
         </Grid>
         <Rectangle x:Name="OpenConfigurationWindow" HorizontalAlignment="Left" Height="50" Stroke="Black" VerticalAlignment="Top" Width="50" MouseEnter="OpenConfigurationWindow_OnMouseEnter" Margin="10,260,0,0">
             <Rectangle.Fill>
-                <ImageBrush ImageSource="Resources/empty.png" Stretch="UniformToFill"/>
+                <ImageBrush ImageSource="Resources/setting.png" Stretch="UniformToFill"/>
             </Rectangle.Fill>
         </Rectangle>
 

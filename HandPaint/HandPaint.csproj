@@ -167,6 +167,11 @@
   <ItemGroup>
     <Resource Include="Resources\empty.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\change.png" />
+    <Resource Include="Resources\hand.png" />
+    <Resource Include="Resources\setting.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\EMGU.CV.3.4.1.2976\build\EMGU.CV.targets" Condition="Exists('..\packages\EMGU.CV.3.4.1.2976\build\EMGU.CV.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
